@@ -20,4 +20,11 @@ pub mod indie_games {
     ) -> Result<()> {
         intialize_asset_handler(ctx, args)
     }
+
+    pub fn mint_asset(
+        ctx: Context<MintAssetContext>,
+        args: MintAssetArgs
+    ) -> Result<()> {
+        mint_asset_handler(ctx, args)
+    }
 }

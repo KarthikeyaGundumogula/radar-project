@@ -3,7 +3,7 @@ use crate::state::asset_state::*;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, Mint, MintTo, Token},
+    token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -36,7 +36,64 @@ pub fn intialize_asset_handler(
     asset.trade = args.trade_option;
     asset.collateral_option = args.collateral_option;
     asset.collateral = args.collateral;
+    msg!("Asset Data initialized along with mint account for the assets ");
     Ok(())
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub struct MintAssetArgs {
+    pub game_id: Pubkey,
+    pub amount: u64,
+    pub name: String,
+}
+
+pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
+    let cpi_program = ctx.accounts.token_program.to_account_info();
+    let cpi_accounts = MintTo {
+        authority: ctx.accounts.asset_account.to_account_info(),
+        to: ctx.accounts.token_account.to_account_info(),
+        mint: ctx.accounts.mint.to_account_info(),
+    };
+    let seeds = vec![ctx.bumps.asset_account];
+    let binding = args.game_id;
+    let seeds = vec![args.name.as_bytes(), binding.as_ref(), seeds.as_slice()];
+    let seeds = vec![seeds.as_slice()];
+    let seeds = seeds.as_slice();
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, seeds);
+
+    mint_to(cpi_ctx, args.amount)?;
+    msg!("minted tokens {args.amount}");
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(args:MintAssetArgs)]
+pub struct MintAssetContext<'info> {
+    #[account(
+        mut,
+        seeds=[args.game_id.as_ref(),asset_account.key().as_ref()],
+        bump
+    )]
+    pub mint: Account<'info, Mint>,
+    #[account(
+        seeds=[args.name.as_bytes(),args.game_id.as_ref()],
+        bump,
+    )]
+    pub asset_account: Account<'info, AssetData>,
+    #[account(
+        init_if_needed,
+        payer = user,
+        associated_token::mint = mint,
+        associated_token::authority = user,
+        has_one = mint
+    )]
+    pub token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
