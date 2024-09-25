@@ -16,3 +16,9 @@ pub struct AssetData {
     pub collateral_option: bool,
     pub collateral: u64,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct AssetAuthority {
+    pub user: Pubkey
+}
