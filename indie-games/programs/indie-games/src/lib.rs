@@ -6,13 +6,21 @@ pub mod state;
 
 // use state::*;
 // use errors::*;
-use instructions::assets::*;
+use instructions::{asset_instructions::*,game_instructions::*};
 
 declare_id!("5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe");
 
 #[program]
 pub mod indie_games {
-     use super::*;
+
+    use super::*;
+
+    pub fn initialize_game(
+        ctx: Context<InitializeGameContext>,
+        args: InitializeGameArgs,
+    ) -> Result<()> {
+        initialize_game_handler(ctx,args)
+    }
 
     pub fn initialize_assets(
         ctx: Context<InitializeAssetData>,
@@ -21,10 +29,7 @@ pub mod indie_games {
         intialize_asset_handler(ctx, args)
     }
 
-    pub fn mint_asset(
-        ctx: Context<MintAssetContext>,
-        args: MintAssetArgs
-    ) -> Result<()> {
+    pub fn mint_asset(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
         mint_asset_handler(ctx, args)
     }
 }
