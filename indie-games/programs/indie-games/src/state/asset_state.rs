@@ -22,3 +22,10 @@ pub struct AssetData {
 pub struct AssetAuthority {
     pub user: Pubkey
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct MintAuthority {
+    pub user: Pubkey,
+    pub asset_account: Pubkey,
+}

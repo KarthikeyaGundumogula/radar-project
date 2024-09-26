@@ -6,7 +6,7 @@ pub mod state;
 
 // use state::*;
 // use errors::*;
-use instructions::{asset_instructions::*,game_instructions::*};
+use instructions::{asset_initialize_instructions::*,game_instructions::*};
 
 declare_id!("5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe");
 
@@ -29,7 +29,7 @@ pub mod indie_games {
         intialize_asset_handler(ctx, args)
     }
 
-    pub fn mint_asset(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
+    pub fn mint_asset_as_owner(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
         mint_asset_handler(ctx, args)
     }
 }

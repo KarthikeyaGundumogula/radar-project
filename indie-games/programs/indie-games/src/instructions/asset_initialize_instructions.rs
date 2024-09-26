@@ -50,15 +50,21 @@ pub struct MintAssetArgs {
     pub game_id: Pubkey,
     pub amount: u64,
     pub name: String,
+    pub game_name: String,
     pub holder: Pubkey,
 }
 
 pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
     let signer = &ctx.accounts.user;
     let game_account = &ctx.accounts.game_account;
+    let asset_account = &ctx.accounts.asset_account;
     require!(
         signer.key() == game_account.owner,
         AssetErrors::InvalidOperation,
+    );
+    require!(
+        game_account.key() == asset_account.game,
+        AssetErrors::InvalidGameOrAssetAccount
     );
     let asset_authority = &mut ctx.accounts.asset_authority;
     asset_authority.user = args.holder;
@@ -106,9 +112,13 @@ pub struct MintAssetContext<'info> {
         space = 8+AssetAuthority::INIT_SPACE
     )]
     pub asset_authority: Account<'info, AssetAuthority>,
+    #[account(
+        seeds = [user.key().as_ref(),args.game_name.as_bytes()],
+        bump
+    )]
+    pub game_account: Account<'info, GameState>,
     #[account(mut)]
     pub user: Signer<'info>,
-    pub game_account: Account<'info, GameState>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,

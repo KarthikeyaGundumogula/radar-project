@@ -7,5 +7,7 @@ pub enum AssetErrors {
     #[msg("Minting new token failed")]
     MintFailed,
     #[msg("Only Game Owner can Create new Assets")]
-    InvalidOperation
+    InvalidOperation,
+    #[msg("Given Game Account and Asset Account are not related")]
+    InvalidGameOrAssetAccount
 }
