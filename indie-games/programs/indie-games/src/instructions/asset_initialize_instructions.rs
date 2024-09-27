@@ -45,6 +45,37 @@ pub fn intialize_asset_handler(
     Ok(())
 }
 
+#[derive(Accounts)]
+#[instruction(args:InitializeAssetDataArgs)]
+pub struct InitializeAssetData<'info> {
+    #[account(
+        init_if_needed,
+        payer = creator,
+        seeds=[args.name.as_bytes(),args.game_id.key().as_ref()],
+        bump,
+        space = 8 + AssetData::INIT_SPACE
+    )]
+    pub asset_account: Account<'info, AssetData>,
+    #[account(
+        init,
+        seeds = [args.game_id.key().as_ref(),asset_account.key().as_ref()],
+        bump,
+        payer = creator,
+        mint::decimals = 0,
+        mint::authority = mint,
+    )]
+    pub mint: Account<'info, Mint>,
+    #[account(
+        seeds = [creator.key().as_ref(),game_account.name.as_bytes()],
+        bump
+    )]
+    pub game_account: Account<'info, GameState>,
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+}
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct MintAssetArgs {
     pub game_id: Pubkey,
@@ -88,7 +119,7 @@ pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -
 pub struct MintAssetContext<'info> {
     #[account(
         mut,
-        seeds=[args.game_id.key().as_ref(),asset_account.key().as_ref()],
+        seeds=[game_account.key().as_ref(),asset_account.key().as_ref()],
         bump
     )]
     pub mint: Account<'info, Mint>,
@@ -123,32 +154,4 @@ pub struct MintAssetContext<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
-}
-
-#[derive(Accounts)]
-#[instruction(args:InitializeAssetDataArgs)]
-pub struct InitializeAssetData<'info> {
-    #[account(
-        init_if_needed,
-        payer = creator,
-        seeds=[args.name.as_bytes(),args.game_id.key().as_ref()],
-        bump,
-        space = 8 + AssetData::INIT_SPACE
-    )]
-    pub asset_account: Account<'info, AssetData>,
-    #[account(
-        init,
-        seeds = [args.game_id.key().as_ref(),asset_account.key().as_ref()],
-        bump,
-        payer = creator,
-        mint::decimals = 0,
-        mint::authority = mint,
-    )]
-    pub mint: Account<'info, Mint>,
-    #[account(mut)]
-    pub creator: Signer<'info>,
-    pub game_account: Account<'info, GameState>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
-    pub system_program: Program<'info, System>,
 }

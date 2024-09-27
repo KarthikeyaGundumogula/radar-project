@@ -9,5 +9,7 @@ pub enum AssetErrors {
     #[msg("Only Game Owner can Create new Assets")]
     InvalidOperation,
     #[msg("Given Game Account and Asset Account are not related")]
-    InvalidGameOrAssetAccount
+    InvalidGameOrAssetAccount,
+    #[msg("Cannot transfer non-tradable Assets")]
+    InvalidTransfer
 }
