@@ -58,7 +58,7 @@ pub struct InitializeAssetData<'info> {
     pub asset_account: Account<'info, AssetData>,
     #[account(
         init,
-        seeds = [args.game_id.key().as_ref(),asset_account.key().as_ref()],
+        seeds = [args.game_id.as_ref(),asset_account.key().as_ref()],
         bump,
         payer = creator,
         mint::decimals = 0,
