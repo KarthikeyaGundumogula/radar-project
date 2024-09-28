@@ -16,7 +16,7 @@ pub struct InitializeAssetDataArgs {
     score: u8,
     trade_option: bool,
     collateral_option: bool,
-    collateral: u64,
+    collateral_ratio: u64,
 }
 
 pub fn intialize_asset_handler(
@@ -40,7 +40,7 @@ pub fn intialize_asset_handler(
     asset.score = args.score;
     asset.trade = args.trade_option;
     asset.collateral_option = args.collateral_option;
-    asset.collateral = args.collateral;
+    asset.collateral_ratio = args.collateral_ratio;
     msg!("Asset Data initialized along with mint account for the assets ");
     Ok(())
 }

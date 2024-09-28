@@ -7,12 +7,12 @@ import { expect } from "chai";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, getMint, TOKEN_PROGRAM_ID, } from "@solana/spl-token"
 
 import { assert } from "chai";
+import { StableCoin } from "../target/types/stable_coin";
 
 describe('Asset Minting Tests', () => {
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
     const program = anchor.workspace.IndieGames as Program<IndieGames>;
-
     let assetAccount: PublicKey;
     let mint: PublicKey;
     let userTokenAccount: PublicKey;

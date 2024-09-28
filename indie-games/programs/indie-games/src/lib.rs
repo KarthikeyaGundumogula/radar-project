@@ -6,7 +6,10 @@ pub mod state;
 
 // use state::*;
 // use errors::*;
-use instructions::{asset_initialize_instructions::*,game_instructions::*};
+use instructions::{
+    asset_initialize_instructions::*, asset_management_instructions::*,
+    asset_marketplace_instructions::*, game_instructions::*,
+};
 
 declare_id!("5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe");
 
@@ -19,7 +22,7 @@ pub mod indie_games {
         ctx: Context<InitializeGameContext>,
         args: InitializeGameArgs,
     ) -> Result<()> {
-        initialize_game_handler(ctx,args)
+        initialize_game_handler(ctx, args)
     }
 
     pub fn initialize_assets(
@@ -31,5 +34,23 @@ pub mod indie_games {
 
     pub fn mint_asset_as_owner(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
         mint_asset_handler(ctx, args)
+    }
+
+    pub fn mint_shared_asset(
+        ctx: Context<MintAuthorizedAssetContext>,
+        args: MintAuthorizedAssetArgs,
+    ) -> Result<()> {
+        mint_authorized_asset_handler(ctx, args)
+    }
+
+    pub fn list_asset(ctx: Context<TransferAssetContext>, args: ListAssetArgs) -> Result<()> {
+        list_for_sale_handler(ctx, args)
+    }
+
+    pub fn buy_from_marketplace(
+        ctx: Context<TransferAssetContext>,
+        args: BuyAssetArgs,
+    ) -> Result<()> {
+        buy_from_sale_handler(ctx, args)
     }
 }

@@ -6,6 +6,7 @@ skip-lint = false
 
 [programs.localnet]
 indie_games = "5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe"
+stable-coin = "7Gkpxg4iFEwCHsWphq7k7PVRxCVbAVieDbapABaYtNHv"
 
 [registry]
 url = "https://api.apr.dev"

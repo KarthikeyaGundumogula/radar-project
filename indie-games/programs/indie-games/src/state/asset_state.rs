@@ -14,7 +14,7 @@ pub struct AssetData {
     pub score: u8,
     pub trade: bool,
     pub collateral_option: bool,
-    pub collateral: u64,
+    pub collateral_ratio: u64,
 }
 
 #[account]

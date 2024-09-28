@@ -17,7 +17,7 @@ pub struct BuyAssetArgs {
     pub asset_game_id: Pubkey
 }
 
-pub fn list_for_sale(ctx: Context<TransferAssetContext>, args: ListAssetArgs) -> Result<()> {
+pub fn list_for_sale_handler(ctx: Context<TransferAssetContext>, args: ListAssetArgs) -> Result<()> {
     let current_listing_id = if let Some(market_acc) = &mut ctx.accounts.market_place {
         market_acc.reload()?;
         let new_id = market_acc
@@ -49,7 +49,7 @@ pub fn list_for_sale(ctx: Context<TransferAssetContext>, args: ListAssetArgs) ->
     transfer_assets(ctx, transfer_args)
 }
 
-pub fn buy_from_sale(ctx: Context<TransferAssetContext>,args: BuyAssetArgs) -> Result<()> {
+pub fn buy_from_sale_handler(ctx: Context<TransferAssetContext>,args: BuyAssetArgs) -> Result<()> {
     let sale = if let Some(sale_acc) = &mut ctx.accounts.sale_acc {
         sale_acc.sale_state = 1;
         sale_acc
