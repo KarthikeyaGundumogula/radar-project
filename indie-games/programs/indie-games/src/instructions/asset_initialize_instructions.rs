@@ -3,7 +3,7 @@ use crate::state::{asset_state::*, game_state::*};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, Mint, MintTo, Token, TokenAccount},
+    token::{mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer as DSC_Transfer},
 };
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -111,6 +111,20 @@ pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -
 
     mint_to(cpi_ctx, args.amount)?;
     msg!("minted tokens {args.amount}");
+    if asset_account.collateral_option == true {
+        let collateral_ratio = asset_account.collateral_ratio.checked_div(100).unwrap();
+        let price = asset_account.price;
+        let collateral_factor = collateral_ratio.checked_mul(args.amount).unwrap();
+        let collateral_deposit = collateral_factor.checked_mul(price).unwrap();
+        let cpi_accounts = DSC_Transfer {
+            from: ctx.accounts.user_dsc_token_ata.to_account_info(),
+            to: ctx.accounts.collateral_token_account.to_account_info(),
+            authority: ctx.accounts.mint.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        transfer(cpi_ctx, collateral_deposit)?;
+    }
     Ok(())
 }
 
@@ -135,6 +149,10 @@ pub struct MintAssetContext<'info> {
         associated_token::authority = asset_authority,
     )]
     pub token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub collateral_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_dsc_token_ata: Account<'info, TokenAccount>,
     #[account(
         init_if_needed,
         payer = user,
