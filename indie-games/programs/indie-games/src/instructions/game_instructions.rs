@@ -3,6 +3,7 @@ use crate::{
     state::{asset_state::*, game_state::*},
 };
 use anchor_lang::prelude::*;
+use anchor_spl::{token::Token, token_interface};
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitializeGameArgs {
@@ -25,6 +26,13 @@ pub fn initialize_game_handler(
 #[derive(Accounts)]
 #[instruction(args: InitializeGameArgs)]
 pub struct InitializeGameContext<'info> {
+    // PDA, auth over all token vaults
+    /// CHECK: unsafe
+    #[account(
+        seeds = [b"vault_authority"],
+        bump
+    )]
+    pub token_ata_authority: AccountInfo<'info>,
     #[account(
         init,
         seeds = [args.owner.as_ref(),args.name.as_bytes()],
@@ -33,9 +41,24 @@ pub struct InitializeGameContext<'info> {
         bump,
     )]
     pub game_account: Account<'info, GameState>,
+    #[account(
+        init_if_needed,
+        token::mint = token_mint,
+        token::authority = token_ata_authority,
+        seeds = [b"token_vault"],
+        bump,
+        payer = initializer,
+    )]
+    pub token_vault: InterfaceAccount<'info, token_interface::TokenAccount>, 
+     #[account(
+        mut,
+        mint::token_program = token_program
+    )]
+    pub token_mint: InterfaceAccount<'info, token_interface::Mint>,
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info,Token>
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -90,3 +113,4 @@ pub struct AddAssetAuthorityContext<'info> {
     pub game_owner: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
+

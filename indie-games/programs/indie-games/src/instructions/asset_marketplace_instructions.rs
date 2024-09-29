@@ -1,5 +1,6 @@
 use crate::{errors::marketplace_errors::*, instructions::asset_management_instructions::*};
 use anchor_lang::prelude::*;
+use anchor_spl::token::{transfer, Transfer as DscTransfer};
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ListAssetArgs {
@@ -10,14 +11,17 @@ pub struct ListAssetArgs {
     pub asset_game_id: Pubkey,
 }
 
-#[derive(AnchorDeserialize,AnchorSerialize)]
+#[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct BuyAssetArgs {
-    pub asset_name:String,
+    pub asset_name: String,
     pub to_acc_authority: Pubkey,
-    pub asset_game_id: Pubkey
+    pub asset_game_id: Pubkey,
 }
 
-pub fn list_for_sale_handler(ctx: Context<TransferAssetContext>, args: ListAssetArgs) -> Result<()> {
+pub fn list_for_sale_handler(
+    ctx: Context<TransferAssetContext>,
+    args: ListAssetArgs,
+) -> Result<()> {
     let current_listing_id = if let Some(market_acc) = &mut ctx.accounts.market_place {
         market_acc.reload()?;
         let new_id = market_acc
@@ -49,22 +53,20 @@ pub fn list_for_sale_handler(ctx: Context<TransferAssetContext>, args: ListAsset
     transfer_assets(ctx, transfer_args)
 }
 
-pub fn buy_from_sale_handler(ctx: Context<TransferAssetContext>,args: BuyAssetArgs) -> Result<()> {
+pub fn buy_from_sale_handler(ctx: Context<TransferAssetContext>, args: BuyAssetArgs) -> Result<()> {
     let sale = if let Some(sale_acc) = &mut ctx.accounts.sale_acc {
         sale_acc.sale_state = 1;
         sale_acc
-    }
-    else {
+    } else {
         return Err(error!(MarketplaceError::SaleNotFound));
     };
 
-    let transfer_args= TransferAssetArgs{
+    let transfer_args = TransferAssetArgs {
         asset_name: args.asset_name,
         amount: sale.sale_amount,
         to_account_authority: args.to_acc_authority,
         sale_id: sale.listing_id,
-        asset_game_id: args.asset_game_id
+        asset_game_id: args.asset_game_id,
     };
-
-    transfer_assets(ctx,transfer_args)
+    transfer_assets(ctx, transfer_args)
 }

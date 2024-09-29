@@ -119,7 +119,7 @@ pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -
         let cpi_accounts = DSC_Transfer {
             from: ctx.accounts.user_dsc_token_ata.to_account_info(),
             to: ctx.accounts.collateral_token_account.to_account_info(),
-            authority: ctx.accounts.mint.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
@@ -149,6 +149,11 @@ pub struct MintAssetContext<'info> {
         associated_token::authority = asset_authority,
     )]
     pub token_account: Account<'info, TokenAccount>,
+    #[account(
+        seeds = [b"token_vault"],
+        bump
+    )]
+    pub dsc_ata_authority: AccountInfo<'info>,
     #[account(mut)]
     pub collateral_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
