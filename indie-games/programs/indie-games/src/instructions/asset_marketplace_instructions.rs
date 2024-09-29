@@ -1,6 +1,12 @@
-use crate::{errors::marketplace_errors::*, instructions::asset_management_instructions::*};
+use crate::{
+    errors::marketplace_errors::*, instructions::asset_management_instructions::*,
+    state::marketplace_state::*,
+};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{transfer, Transfer as DscTransfer};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{transfer, Token, TokenAccount, Transfer as DscTransfer},
+};
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ListAssetArgs {
@@ -9,6 +15,7 @@ pub struct ListAssetArgs {
     pub sale_amount: u64,
     pub market_authority: Pubkey,
     pub asset_game_id: Pubkey,
+    pub dsc_credit_ata: Pubkey
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -22,51 +29,34 @@ pub fn list_for_sale_handler(
     ctx: Context<TransferAssetContext>,
     args: ListAssetArgs,
 ) -> Result<()> {
-    let current_listing_id = if let Some(market_acc) = &mut ctx.accounts.market_place {
-        market_acc.reload()?;
-        let new_id = market_acc
-            .current_listing_id
-            .checked_add(1)
-            .ok_or(error!(MarketplaceError::ArithmeticError))?;
-        market_acc.current_listing_id = new_id;
-        market_acc.reload()?;
-        new_id
-    } else {
-        return Err(error!(MarketplaceError::MarketplaceNotInitialized));
-    };
-
-    if let Some(sale_acc) = &mut ctx.accounts.sale_acc {
-        sale_acc.listing_id = current_listing_id;
-        sale_acc.price = args.sale_price;
-        sale_acc.sale_amount = args.sale_amount;
-        sale_acc.sale_state = 0;
-    }
-
-    let transfer_args = TransferAssetArgs {
-        asset_name: args.asset_name,
-        amount: args.sale_amount,
-        to_account_authority: args.market_authority,
-        sale_id: current_listing_id,
-        asset_game_id: args.asset_game_id,
-    };
-
-    transfer_assets(ctx, transfer_args)
+    Ok(())
 }
 
-pub fn buy_from_sale_handler(ctx: Context<TransferAssetContext>, args: BuyAssetArgs) -> Result<()> {
-    let sale = if let Some(sale_acc) = &mut ctx.accounts.sale_acc {
-        sale_acc.sale_state = 1;
-        sale_acc
-    } else {
-        return Err(error!(MarketplaceError::SaleNotFound));
-    };
+pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>, args: BuyAssetArgs) -> Result<()> {
+    Ok(())
+}
 
-    let transfer_args = TransferAssetArgs {
-        asset_name: args.asset_name,
-        amount: sale.sale_amount,
-        to_account_authority: args.to_acc_authority,
-        sale_id: sale.listing_id,
-        asset_game_id: args.asset_game_id,
-    };
-    transfer_assets(ctx, transfer_args)
+#[derive(Accounts)]
+#[instruction(args: BuyAssetArgs)]
+pub struct BuyFromSaleContext<'info> {
+    #[account(mut)]
+    pub from_dsc_ata: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub seller_dsc_ata: Account<'info,TokenAccount>,
+    #[account(mut)]
+    pub buyer_asset_ata: Account<'info,TokenAccount>,
+    #[account(mut)]
+    pub asset_holder_ata: Account<'info,TokenAccount>,
+    #[account(mut)]
+    pub asset_holder_authority: Account<'info,TokenAccount>,
+    #[account(
+        seeds = [&sale_acc.listing_id.to_le_bytes()],
+        bump
+    )]
+    pub sale_acc: Option<Account<'info, Sale>>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
 }

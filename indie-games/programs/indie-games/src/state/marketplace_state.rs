@@ -13,4 +13,5 @@ pub struct Sale{
     pub price: u64,
     pub sale_state: u8,
     pub sale_amount:u64,
+    pub dsc_credit_ata: Pubkey
 }

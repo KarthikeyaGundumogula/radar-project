@@ -51,6 +51,7 @@ pub mod indie_games {
         ctx: Context<TransferAssetContext>,
         args: BuyAssetArgs,
     ) -> Result<()> {
-        buy_from_sale_handler(ctx, args)
+        // buy_from_sale_handler(ctx, args)
+    Ok(())
     }
 }
