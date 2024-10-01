@@ -1,13 +1,9 @@
 use crate::{
     errors::marketplace_errors::*,
-    instructions::asset_management_instructions::*,
     state::{asset_state::*, marketplace_state::*},
 };
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{transfer, Token, TokenAccount, Transfer as SPLTransfer},
-};
+use anchor_spl::token::{transfer, Token, TokenAccount, Transfer as SPLTransfer};
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ListAssetArgs {
@@ -19,14 +15,27 @@ pub struct ListAssetArgs {
     pub dsc_credit_ata: Pubkey,
 }
 
-pub fn list_for_sale_handler(
-    ctx: Context<ListForSaleContext>,
-    args: ListAssetArgs,
-) -> Result<()> {
-    let asset_account = & ctx.accounts.asset_account;
+pub fn list_for_sale_handler(ctx: Context<ListForSaleContext>, args: ListAssetArgs) -> Result<()> {
+    let asset_account = &ctx.accounts.asset_account;
     require!(asset_account.trade == true, MarketplaceError::CantListAsset);
+    let market = &mut ctx.accounts.marketplace;
     let sale_acc = &mut ctx.accounts.sale_acc;
-    sale_acc.listing_id = sale_acc.listing_id.unchecked_add(1).unwrap();
+    sale_acc.listing_id = market.current_listing_id;
+    sale_acc.price = args.sale_price;
+    sale_acc.sale_amount = args.sale_amount;
+    sale_acc.dsc_credit_ata = args.dsc_credit_ata;
+    sale_acc.sale_state = 0;
+    market.current_listing_id = market.current_listing_id.checked_add(1).unwrap();
+
+    let cpi_program = ctx.accounts.token_program.to_account_info();
+    let cpi_accounts = SPLTransfer {
+        from: ctx.accounts.seller_asset_ata.to_account_info(),
+        to: ctx.accounts.market_asset_ata.to_account_info(),
+        authority: ctx.accounts.seller.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    transfer(cpi_ctx, args.sale_amount)?;
+
     Ok(())
 }
 
@@ -51,7 +60,7 @@ pub struct ListForSaleContext<'info> {
         seeds = [b"market_place"],
         bump,
     )]
-    pub marketplace: Account<'info,Marketplace>,
+    pub marketplace: Account<'info, Marketplace>,
     #[account(
         init,
         seeds = [marketplace.current_listing_id.to_string().as_bytes()],
@@ -59,20 +68,17 @@ pub struct ListForSaleContext<'info> {
         payer = seller,
         space = 8 + Sale::INIT_SPACE
     )]
-    pub sale_acc: Account<'info,Sale>,
-    pub token_program: Program<'info,Token>,
-    pub system_program: Program<'info,System>
+    pub sale_acc: Account<'info, Sale>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize)]
-pub struct BuyAssetArgs {
-    pub asset_name: String,
-    pub to_acc_authority: Pubkey,
-    pub asset_game_id: Pubkey,
-}
 
-pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>, args: BuyAssetArgs) -> Result<()> {
+
+pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>) -> Result<()> {
     let sale_acc = &mut ctx.accounts.sale_acc;
+    require!(sale_acc.sale_state == 0, MarketplaceError::SaleNotFound);
+    sale_acc.sale_state= 1;
     let dsc_cpi_accounts = SPLTransfer {
         from: ctx.accounts.buyer_dsc_ata.to_account_info(),
         to: ctx.accounts.seller_dsc_ata.to_account_info(),
@@ -99,7 +105,6 @@ pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>, args: BuyAssetArg
 }
 
 #[derive(Accounts)]
-#[instruction(args: BuyAssetArgs)]
 pub struct BuyFromSaleContext<'info> {
     #[account(mut)]
     pub buyer_dsc_ata: Account<'info, TokenAccount>,
@@ -116,7 +121,7 @@ pub struct BuyFromSaleContext<'info> {
     )]
     pub asset_holding_ata_authority: AccountInfo<'info>,
     #[account(
-        seeds = [&sale_acc.listing_id.to_le_bytes()],
+        seeds = [&sale_acc.listing_id.to_string().as_bytes()],
         bump
     )]
     pub sale_acc: Account<'info, Sale>,
