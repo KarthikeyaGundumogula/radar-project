@@ -26,14 +26,20 @@ pub fn list_for_sale_handler(ctx: Context<ListForSaleContext>, args: ListAssetAr
     sale_acc.dsc_credit_ata = args.dsc_credit_ata;
     sale_acc.sale_state = 0;
     market.current_listing_id = market.current_listing_id.checked_add(1).unwrap();
-
+    let seller_ata = &ctx.accounts.seller_asset_ata;
     let cpi_program = ctx.accounts.token_program.to_account_info();
+    let ata_key = seller_ata.key();
+    require!(
+        ata_key == ctx.accounts.seller.key(),
+        MarketplaceError::NotAuthorized
+    );
     let cpi_accounts = SPLTransfer {
-        from: ctx.accounts.seller_asset_ata.to_account_info(),
+        from: seller_ata.to_account_info(),
         to: ctx.accounts.market_asset_ata.to_account_info(),
-        authority: ctx.accounts.seller.to_account_info(),
+        authority: ctx.accounts.seller_asset_ata_authority.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    let seeds: &[&[&[u8]]] = &[&[ata_key.as_ref()]];
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, seeds);
     transfer(cpi_ctx, args.sale_amount)?;
 
     Ok(())
@@ -53,6 +59,11 @@ pub struct ListForSaleContext<'info> {
     pub seller_asset_ata: Account<'info, TokenAccount>,
     #[account(mut)]
     pub seller_dsc_ata: Account<'info, TokenAccount>,
+    #[account(
+        seeds = [seller_asset_ata.key().as_ref()],
+        bump
+    )]
+    pub seller_asset_ata_authority: Account<'info, AssetAuthority>,
     #[account(mut)]
     pub seller: Signer<'info>,
     #[account(
@@ -73,12 +84,10 @@ pub struct ListForSaleContext<'info> {
     pub system_program: Program<'info, System>,
 }
 
-
-
 pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>) -> Result<()> {
     let sale_acc = &mut ctx.accounts.sale_acc;
     require!(sale_acc.sale_state == 0, MarketplaceError::SaleNotFound);
-    sale_acc.sale_state= 1;
+    sale_acc.sale_state = 1;
     let dsc_cpi_accounts = SPLTransfer {
         from: ctx.accounts.buyer_dsc_ata.to_account_info(),
         to: ctx.accounts.seller_dsc_ata.to_account_info(),

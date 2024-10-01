@@ -43,15 +43,13 @@ pub mod indie_games {
         mint_authorized_asset_handler(ctx, args)
     }
 
-    pub fn list_asset(ctx: Context<TransferAssetContext>, args: ListAssetArgs) -> Result<()> {
+    pub fn list_asset(ctx: Context<ListForSaleContext>, args: ListAssetArgs) -> Result<()> {
         list_for_sale_handler(ctx, args)
     }
 
     pub fn buy_from_marketplace(
-        ctx: Context<TransferAssetContext>,
-        args: BuyAssetArgs,
+        ctx: Context<BuyFromSaleContext>,
     ) -> Result<()> {
-        // buy_from_sale_handler(ctx, args)
-    Ok(())
+        buy_from_sale_handler(ctx)
     }
 }

@@ -10,4 +10,6 @@ pub enum MarketplaceError {
     SaleNotFound,
     #[msg("Asset trding is disbled for this asset")]
     CantListAsset,
+    #[msg("Seller is not the authorized of the ata")]
+    NotAuthorized
 }
