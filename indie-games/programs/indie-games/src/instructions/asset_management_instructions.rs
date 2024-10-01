@@ -90,7 +90,7 @@ pub struct MintAuthorizedAssetContext<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn transfer_assets(ctx: Context<TransferAssetContext>, args: TransferAssetArgs) -> Result<()> {
+pub fn transfer_assets_handler(ctx: Context<TransferAssetContext>, args: TransferAssetArgs) -> Result<()> {
     let from_acc = &ctx.accounts.from_ata;
     let from_acc_authority = &ctx.accounts.from_ata_authority;
     let to_acc = &ctx.accounts.to_ata;
@@ -144,7 +144,7 @@ pub struct InitAssetATAArgs {
     pub asset_name: String,
 }
 
-pub fn init_asset_ata(ctx: Context<InitAssetATAContext>, _args: InitAssetATAArgs) -> Result<()> {
+pub fn init_asset_ata_handler(ctx: Context<InitAssetATAContext>, _args: InitAssetATAArgs) -> Result<()> {
     let ata_authority = &mut ctx.accounts.to_ata_authority;
     ata_authority.user = ctx.accounts.user.key();
     msg!("asset account initialized");

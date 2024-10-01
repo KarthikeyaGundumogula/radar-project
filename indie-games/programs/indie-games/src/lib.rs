@@ -32,6 +32,13 @@ pub mod indie_games {
         intialize_asset_handler(ctx, args)
     }
 
+    pub fn grant_asset_minting(
+        ctx: Context<AddAssetAuthorityContext>,
+        args: AddAssetAuthorityArgs,
+    ) -> Result<()> {
+        add_asset_authority_handler(ctx, args)
+    }
+
     pub fn mint_asset_as_owner(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
         mint_asset_handler(ctx, args)
     }
@@ -43,13 +50,29 @@ pub mod indie_games {
         mint_authorized_asset_handler(ctx, args)
     }
 
+    pub fn initialize_assets_ata(
+        ctx: Context<InitAssetATAContext>,
+        args: InitAssetATAArgs,
+    ) -> Result<()> {
+        init_asset_ata_handler(ctx, args)
+    }
+
+    pub fn initialize_marketplace(ctx: Context<InitMarketplaceContext>) -> Result<()> {
+        initialize_marketplace_handler(ctx)
+    }
+
     pub fn list_asset(ctx: Context<ListForSaleContext>, args: ListAssetArgs) -> Result<()> {
         list_for_sale_handler(ctx, args)
     }
 
-    pub fn buy_from_marketplace(
-        ctx: Context<BuyFromSaleContext>,
-    ) -> Result<()> {
+    pub fn buy_from_marketplace(ctx: Context<BuyFromSaleContext>) -> Result<()> {
         buy_from_sale_handler(ctx)
+    }
+
+    pub fn transfer_assets(
+        ctx: Context<TransferAssetContext>,
+        args: TransferAssetArgs,
+    ) -> Result<()> {
+        transfer_assets_handler(ctx, args)
     }
 }

@@ -68,7 +68,7 @@ pub struct AddAssetAuthorityArgs {
     pub to_game_id: Pubkey,
 }
 
-pub fn add_asset_authority(
+pub fn add_asset_authority_handler(
     ctx: Context<AddAssetAuthorityContext>,
     args: AddAssetAuthorityArgs,
 ) -> Result<()> {

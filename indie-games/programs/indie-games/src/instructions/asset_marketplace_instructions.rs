@@ -5,6 +5,27 @@ use crate::{
 use anchor_lang::prelude::*;
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer as SPLTransfer};
 
+pub fn initialize_marketplace_handler(ctx: Context<InitMarketplaceContext>) -> Result<()> {
+    let marketplace = &mut ctx.accounts.marketplace;
+    marketplace.current_listing_id = 0;
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct InitMarketplaceContext<'info> {
+    #[account(
+        init,
+        seeds = [b"marketplace"],
+        bump,
+        space = 8 + Marketplace::INIT_SPACE,
+        payer = initializer
+    )]
+    pub marketplace: Account<'info, Marketplace>,
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ListAssetArgs {
     pub asset_name: String,
