@@ -66,10 +66,9 @@ pub struct MintTokens<'info> {
         init_if_needed,
         payer = payer,
         associated_token::mint = mint,
-        associated_token::authority = ata_authority,
+        associated_token::authority = payer,
     )]
     pub destination: Account<'info, TokenAccount>,
-    pub ata_authority: AccountInfo<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,

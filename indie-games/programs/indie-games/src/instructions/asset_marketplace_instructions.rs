@@ -1,7 +1,7 @@
 use crate::{
     errors::marketplace_errors::*,
     instructions::asset_management_instructions::*,
-    state::{asset_state::AssetAuthority, marketplace_state::*},
+    state::{asset_state::*, marketplace_state::*},
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -19,18 +19,56 @@ pub struct ListAssetArgs {
     pub dsc_credit_ata: Pubkey,
 }
 
+pub fn list_for_sale_handler(
+    ctx: Context<ListForSaleContext>,
+    args: ListAssetArgs,
+) -> Result<()> {
+    let asset_account = & ctx.accounts.asset_account;
+    require!(asset_account.trade == true, MarketplaceError::CantListAsset);
+    let sale_acc = &mut ctx.accounts.sale_acc;
+    sale_acc.listing_id = sale_acc.listing_id.unchecked_add(1).unwrap();
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(args: ListAssetArgs)]
+pub struct ListForSaleContext<'info> {
+    #[account(mut)]
+    pub market_asset_ata: Account<'info, TokenAccount>,
+    #[account(
+        seeds=[args.asset_name.as_bytes(),args.asset_game_id.key().as_ref()],
+        bump,
+    )]
+    pub asset_account: Account<'info, AssetData>,
+    #[account(mut)]
+    pub seller_asset_ata: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub seller_dsc_ata: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub seller: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"market_place"],
+        bump,
+    )]
+    pub marketplace: Account<'info,Marketplace>,
+    #[account(
+        init,
+        seeds = [marketplace.current_listing_id.to_string().as_bytes()],
+        bump,
+        payer = seller,
+        space = 8 + Sale::INIT_SPACE
+    )]
+    pub sale_acc: Account<'info,Sale>,
+    pub token_program: Program<'info,Token>,
+    pub system_program: Program<'info,System>
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct BuyAssetArgs {
     pub asset_name: String,
     pub to_acc_authority: Pubkey,
     pub asset_game_id: Pubkey,
-}
-
-pub fn list_for_sale_handler(
-    ctx: Context<TransferAssetContext>,
-    args: ListAssetArgs,
-) -> Result<()> {
-    Ok(())
 }
 
 pub fn buy_from_sale_handler(ctx: Context<BuyFromSaleContext>, args: BuyAssetArgs) -> Result<()> {
@@ -71,6 +109,7 @@ pub struct BuyFromSaleContext<'info> {
     pub buyer_asset_ata: Account<'info, TokenAccount>,
     #[account(mut)]
     pub asset_holding_ata: Account<'info, TokenAccount>,
+    /// CHECK: unsafe
     #[account(
         seeds = [asset_holding_ata.key().as_ref()],
         bump

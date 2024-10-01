@@ -7,5 +7,7 @@ pub enum MarketplaceError {
     #[msg("sale Ids may be Owerflown")]
     ArithmeticError,
     #[msg("sale acc not exists")]
-    SaleNotFound
+    SaleNotFound,
+    #[msg("Asset trding is disbled for this asset")]
+    CantListAsset,
 }

@@ -149,11 +149,6 @@ pub struct MintAssetContext<'info> {
         associated_token::authority = asset_authority,
     )]
     pub token_account: Account<'info, TokenAccount>,
-    #[account(
-        seeds = [b"token_vault"],
-        bump
-    )]
-    pub dsc_ata_authority: AccountInfo<'info>,
     #[account(mut)]
     pub collateral_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
