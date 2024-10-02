@@ -23,33 +23,29 @@ pub fn initialize_game_handler(
     Ok(())
 }
 
+pub fn initialize_dsc_vault_handler(_ctx: Context<InitializeDscTokenVaultContext>)-> Result<()> {
+    msg!("Dsc token Vault Initialized");
+    Ok(())
+}
+
 #[derive(Accounts)]
-#[instruction(args: InitializeGameArgs)]
-pub struct InitializeGameContext<'info> {
+pub struct InitializeDscTokenVaultContext<'info> {
     // PDA, auth over all token vaults
     /// CHECK: unsafe
     #[account(
         seeds = [b"vault_authority"],
         bump
     )]
-    pub token_ata_authority: AccountInfo<'info>,
+    pub dsc_token_ata_authority: AccountInfo<'info>,
     #[account(
         init,
-        seeds = [args.owner.as_ref(),args.name.as_bytes()],
-        payer = initializer,
-        space = 8 + GameState::INIT_SPACE,
-        bump,
-    )]
-    pub game_account: Account<'info, GameState>,
-    #[account(
-        init_if_needed,
         token::mint = token_mint,
-        token::authority = token_ata_authority,
+        token::authority = dsc_token_ata_authority,
         seeds = [b"token_vault"],
         bump,
         payer = initializer,
     )]
-    pub token_vault: InterfaceAccount<'info, token_interface::TokenAccount>, 
+    pub dsc_token_vault: InterfaceAccount<'info, token_interface::TokenAccount>, 
      #[account(
         mut,
         mint::token_program = token_program
@@ -58,7 +54,23 @@ pub struct InitializeGameContext<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info,Token>
+    pub token_program: Program<'info,Token>}
+
+
+#[derive(Accounts)]
+#[instruction(args: InitializeGameArgs)]
+pub struct InitializeGameContext<'info> {
+    #[account(
+        init,
+        seeds = [args.owner.as_ref(),args.name.as_bytes()],
+        payer = initializer,
+        space = 8 + GameState::INIT_SPACE,
+        bump,
+    )]
+    pub game_account: Account<'info, GameState>,
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
@@ -113,4 +125,5 @@ pub struct AddAssetAuthorityContext<'info> {
     pub game_owner: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
+
 

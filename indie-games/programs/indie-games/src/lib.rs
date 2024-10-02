@@ -11,12 +11,18 @@ use instructions::{
     asset_marketplace_instructions::*, game_instructions::*,
 };
 
-declare_id!("5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe");
+declare_id!("FohwxEdiTeT3ZY4r7rXH4dctCLTbA3S1pc8ibibHWaVa");
 
 #[program]
 pub mod indie_games {
 
     use super::*;
+
+    pub fn initialize_dsc_vault(
+        ctx: Context<InitializeDscTokenVaultContext>
+    )-> Result<()> {
+        initialize_dsc_vault_handler(ctx)
+    }
 
     pub fn initialize_game(
         ctx: Context<InitializeGameContext>,

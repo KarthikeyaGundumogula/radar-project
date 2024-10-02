@@ -9,93 +9,93 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, get
 import { assert } from "chai";
 import { StableCoin } from "../target/types/stable_coin";
 
+//key-pair : music unfair salute relief valve tent captain reveal knock snack hip shrimp
+
 describe('Asset Minting Tests', () => {
+
+    const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+    );
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
-    const program = anchor.workspace.IndieGames as Program<IndieGames>;
+    const indie_games_program = anchor.workspace.IndieGames as Program<IndieGames>;
+    const stable_coin_program = anchor.workspace.StableCoin as Program<StableCoin>;
     let assetAccount: PublicKey;
     let mint: PublicKey;
-    let userTokenAccount: PublicKey;
-    let user = provider.wallet.publicKey;
-
     let gameId = new Keypair();
+    let dsc_token_vault: PublicKey;
+    let dsc_vault_authority;
+    let dsc_mint: PublicKey;
 
-    // Initialize the asset before minting
-    it('Initializes the asset account', async () => {
+    function findAssociatedTokenAddress(
+        walletAddress: PublicKey,
+        tokenMintAddress: PublicKey
+    ): PublicKey {
+        return PublicKey.findProgramAddressSync(
+            [
+                walletAddress.toBuffer(),
+                TOKEN_PROGRAM_ID.toBuffer(),
+                tokenMintAddress.toBuffer(),
+            ],
+            SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+        )[0];
+    }
+
+    before(async () => {
+
         const [assetAccountPda, assetBump] = PublicKey.findProgramAddressSync(
             [Buffer.from('MyAssetName'), gameId.publicKey.toBuffer()],
-            program.programId
+            indie_games_program.programId
         );
-
-        const [mintPda, mintBump] = PublicKey.findProgramAddressSync(
+        assetAccount = assetAccountPda
+        const [assetMintPda, mintBump] = PublicKey.findProgramAddressSync(
             [gameId.publicKey.toBuffer(), assetAccountPda.toBuffer()],
-            program.programId
+            indie_games_program.programId
         );
+        mint = assetMintPda
 
-        assetAccount = assetAccountPda;
-        mint = mintPda;
+        const [dscMintPda,] = PublicKey.findProgramAddressSync(
+            [Buffer.from("mint")],
+            stable_coin_program.programId
+        )
+        dsc_mint = dscMintPda;
+        const [vault_pda, vault_bump] = PublicKey.findProgramAddressSync(
+            [Buffer.from("token_vault")],
+            indie_games_program.programId
+        )
+        dsc_token_vault = vault_pda;
+        const [vault_authority, vault_authority_bump] = PublicKey.findProgramAddressSync(
+            [Buffer.from("vault_authority")],
+            indie_games_program.programId
+        )
+        dsc_vault_authority = vault_authority
+    })
 
-        const tx = await program.methods
-            .initializeAssets({
-                gameId: gameId.publicKey, // Replace with actual Pubkey
-                name: 'MyAssetName',
-                symbol: 'ASN',
-                uri: 'https://myasset.uri',
-                price: new BN(100),
-                score: 50,
-                tradeOption: true,
-                collateralOption: false,
-                collateral: new BN(500),
-            })
+    it('intializes dsc_token_ata', async () => {
+
+        let tx = await stable_coin_program.methods
+            .initToken()
             .accountsStrict({
-                assetAccount: assetAccountPda,
-                mint: mintPda,
-                creator: provider.wallet.publicKey,
-                tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+                mint: dsc_mint,
+                payer: provider.wallet.publicKey,
+                rent: SYSVAR_RENT_PUBKEY,
                 systemProgram: SystemProgram.programId,
-                rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-            })
-            .rpc();
+                tokenProgram: TOKEN_PROGRAM_ID
+            }).rpc();
 
-        console.log("Transaction signature:", tx);
-        const assetData = await program.account.assetData.fetch(assetAccountPda);
-        assert.equal(assetData.name, 'MyAssetName');
-        let my_acc = await getMint(provider.connection, mint);
-        console.log(my_acc);
-
-        let tokenAcc = await getAssociatedTokenAddress(mint, provider.wallet.publicKey)
-
-        let txn = await program.methods.mintAsset({
-            name: "MyAssetName",
-            amount: new BN(10),
-            gameId: gameId.publicKey
-        }).accountsStrict({
-            mint: mint,
-            assetAccount: assetAccountPda,
-            tokenAccount: tokenAcc,
-            user: provider.wallet.publicKey,
+        let tx1 = await indie_games_program.methods.initializeDscVault().accountsStrict({
+            dscTokenAtaAuthority: dsc_vault_authority,
+            dscTokenVault: dsc_token_vault,
+            tokenMint: dsc_mint,
+            initializer: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-            rent: SYSVAR_RENT_PUBKEY
+            tokenProgram: TOKEN_PROGRAM_ID
         }).rpc();
-        const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
-            'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-        );
-        function findAssociatedTokenAddress(
-            walletAddress: PublicKey,
-            tokenMintAddress: PublicKey
-        ): PublicKey {
-            return PublicKey.findProgramAddressSync(
-                [
-                    walletAddress.toBuffer(),
-                    TOKEN_PROGRAM_ID.toBuffer(),
-                    tokenMintAddress.toBuffer(),
-                ],
-                SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
-            )[0];
-        }
-        let tokenBal = await getAccount(provider.connection, findAssociatedTokenAddress(provider.wallet.publicKey, mint));
-        console.log(tokenBal);
-    });
+        const vaultAccountInfo = await getAccount(provider.connection, dsc_token_vault);
+
+        expect(vaultAccountInfo.mint.toString()).to.equal(dsc_mint.toString());
+        expect(vaultAccountInfo.owner.toString()).to.equal(dsc_vault_authority.toString());
+        expect(vaultAccountInfo.amount.toString()).to.equal("0"); // Initially, the balance should be 0
+
+    })
 });

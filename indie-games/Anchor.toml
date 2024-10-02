@@ -6,8 +6,8 @@ skip-lint = false
 
 [programs.localnet]
 indie-games-dao = "EAwKGvgAJeTMaMHF8UYwMGmXCWBp4NCjmta534nEAodG"
-indie_games = "5aDMDM66ULuQvrjFtG4SnJT23mzoRfYmT4AnJZkPKgoe"
-stable-coin = "7Gkpxg4iFEwCHsWphq7k7PVRxCVbAVieDbapABaYtNHv"
+indie_games = "FohwxEdiTeT3ZY4r7rXH4dctCLTbA3S1pc8ibibHWaVa"
+stable-coin = "9c4urtawvj6Q8FBPLCDQ5GGW3jAHJRwbnRqzFjLBZ8S5"
 
 [registry]
 url = "https://api.apr.dev"

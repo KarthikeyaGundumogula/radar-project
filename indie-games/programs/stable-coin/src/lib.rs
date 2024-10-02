@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
 
-declare_id!("7Gkpxg4iFEwCHsWphq7k7PVRxCVbAVieDbapABaYtNHv");
+declare_id!("9c4urtawvj6Q8FBPLCDQ5GGW3jAHJRwbnRqzFjLBZ8S5");
 
 #[program]
 pub mod stable_coin {
