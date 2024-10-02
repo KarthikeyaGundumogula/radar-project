@@ -20,7 +20,7 @@ pub struct InitializeAssetDataArgs {
 }
 
 pub fn intialize_asset_handler(
-    ctx: Context<InitializeAssetData>,
+    ctx: Context<InitializeAssetDataContext>,
     args: InitializeAssetDataArgs,
 ) -> Result<()> {
     let asset = &mut ctx.accounts.asset_account;
@@ -47,18 +47,18 @@ pub fn intialize_asset_handler(
 
 #[derive(Accounts)]
 #[instruction(args:InitializeAssetDataArgs)]
-pub struct InitializeAssetData<'info> {
+pub struct InitializeAssetDataContext<'info> {
     #[account(
         init_if_needed,
         payer = creator,
-        seeds=[args.name.as_bytes(),args.game_id.key().as_ref()],
+        seeds=[args.name.as_bytes(),game_account.key().as_ref()],
         bump,
         space = 8 + AssetData::INIT_SPACE
     )]
     pub asset_account: Account<'info, AssetData>,
     #[account(
         init,
-        seeds = [args.game_id.as_ref(),asset_account.key().as_ref()],
+        seeds = [game_account.key().as_ref(),asset_account.key().as_ref()],
         bump,
         payer = creator,
         mint::decimals = 0,

@@ -18,9 +18,7 @@ pub mod indie_games {
 
     use super::*;
 
-    pub fn initialize_dsc_vault(
-        ctx: Context<InitializeDscTokenVaultContext>
-    )-> Result<()> {
+    pub fn initialize_dsc_vault(ctx: Context<InitializeDscTokenVaultContext>) -> Result<()> {
         initialize_dsc_vault_handler(ctx)
     }
 
@@ -32,7 +30,7 @@ pub mod indie_games {
     }
 
     pub fn initialize_assets(
-        ctx: Context<InitializeAssetData>,
+        ctx: Context<InitializeAssetDataContext>,
         args: InitializeAssetDataArgs,
     ) -> Result<()> {
         intialize_asset_handler(ctx, args)
