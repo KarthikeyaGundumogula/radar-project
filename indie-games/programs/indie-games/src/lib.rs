@@ -19,6 +19,7 @@ pub mod indie_games {
     use super::*;
 
     pub fn initialize_dsc_vault(ctx: Context<InitializeDscTokenVaultContext>) -> Result<()> {
+        // ✅
         initialize_dsc_vault_handler(ctx)
     }
 
@@ -26,6 +27,7 @@ pub mod indie_games {
         ctx: Context<InitializeGameContext>,
         args: InitializeGameArgs,
     ) -> Result<()> {
+        // ✅
         initialize_game_handler(ctx, args)
     }
 
@@ -33,14 +35,15 @@ pub mod indie_games {
         ctx: Context<InitializeAssetDataContext>,
         args: InitializeAssetDataArgs,
     ) -> Result<()> {
+        // ✅
         intialize_asset_handler(ctx, args)
     }
 
     pub fn grant_asset_minting(
-        ctx: Context<AddAssetAuthorityContext>,
-        args: AddAssetAuthorityArgs,
+        ctx: Context<GrantMintAuthorityContext>,
+        args: GrantMintAuthorityArgs,
     ) -> Result<()> {
-        add_asset_authority_handler(ctx, args)
+        grant_mint_authority_handler(ctx, args)
     }
 
     pub fn mint_asset_as_owner(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {

@@ -23,7 +23,7 @@ pub fn initialize_game_handler(
     Ok(())
 }
 
-pub fn initialize_dsc_vault_handler(_ctx: Context<InitializeDscTokenVaultContext>)-> Result<()> {
+pub fn initialize_dsc_vault_handler(_ctx: Context<InitializeDscTokenVaultContext>) -> Result<()> {
     msg!("Dsc token Vault Initialized");
     Ok(())
 }
@@ -45,8 +45,8 @@ pub struct InitializeDscTokenVaultContext<'info> {
         bump,
         payer = initializer,
     )]
-    pub dsc_token_vault: InterfaceAccount<'info, token_interface::TokenAccount>, 
-     #[account(
+    pub dsc_token_vault: InterfaceAccount<'info, token_interface::TokenAccount>,
+    #[account(
         mut,
         mint::token_program = token_program
     )]
@@ -54,8 +54,8 @@ pub struct InitializeDscTokenVaultContext<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info,Token>}
-
+    pub token_program: Program<'info, Token>,
+}
 
 #[derive(Accounts)]
 #[instruction(args: InitializeGameArgs)]
@@ -74,15 +74,15 @@ pub struct InitializeGameContext<'info> {
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
-pub struct AddAssetAuthorityArgs {
+pub struct GrantMintAuthorityArgs {
     pub source_game_name: String,
     pub source_game_id: Pubkey,
     pub to_game_id: Pubkey,
 }
 
-pub fn add_asset_authority_handler(
-    ctx: Context<AddAssetAuthorityContext>,
-    args: AddAssetAuthorityArgs,
+pub fn grant_mint_authority_handler(
+    ctx: Context<GrantMintAuthorityContext>,
+    args: GrantMintAuthorityArgs,
 ) -> Result<()> {
     let asset_account = &ctx.accounts.asset_account;
     let game_account = &ctx.accounts.game_account;
@@ -95,14 +95,15 @@ pub fn add_asset_authority_handler(
         game_account.owner == callee,
         GameErrors::UnAuthorizedOperation
     );
-    let asset_authority_acc = &mut ctx.accounts.asset_authority_account;
-    asset_authority_acc.user = args.to_game_id;
+    let mint_auth_acc = &mut ctx.accounts.mint_authority_account;
+    mint_auth_acc.user = args.to_game_id;
+    mint_auth_acc.asset_account = asset_account.key();
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(args: AddAssetAuthorityArgs)]
-pub struct AddAssetAuthorityContext<'info> {
+#[instruction(args: GrantMintAuthorityArgs)]
+pub struct GrantMintAuthorityContext<'info> {
     #[account(
         seeds = [game_owner.key().as_ref(),args.source_game_name.as_bytes()],
         bump
@@ -120,10 +121,8 @@ pub struct AddAssetAuthorityContext<'info> {
         space = 8+ AssetAuthority::INIT_SPACE,
         bump
     )]
-    pub asset_authority_account: Account<'info, AssetAuthority>,
+    pub mint_authority_account: Account<'info, MintAuthority>,
     #[account(mut)]
     pub game_owner: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
-
-

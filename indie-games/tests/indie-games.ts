@@ -5,18 +5,18 @@ import {
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
   Keypair,
+  SendTransactionError,
 } from "@solana/web3.js";
-import { IndieGames } from "../target/types/indie_games";
 import { BN } from "bn.js";
 import { expect } from "chai";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
   getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-
-import { assert } from "chai";
+import { IndieGames } from "../target/types/indie_games";
 import { StableCoin } from "../target/types/stable_coin";
 
 //key-pair : music unfair salute relief valve tent captain reveal knock snack hip shrimp
@@ -28,14 +28,16 @@ describe("Asset Minting Tests", () => {
     .IndieGames as Program<IndieGames>;
   const stable_coin_program = anchor.workspace
     .StableCoin as Program<StableCoin>;
-  let assetAccount: PublicKey;
+  let asset_data_account: PublicKey;
   let asset_mint: PublicKey;
   let game_acc: PublicKey;
   let dsc_token_vault: PublicKey;
-  let dsc_vault_authority;
+  let dsc_vault_authority: PublicKey;
   let dsc_mint: PublicKey;
   let dsc_token_ata: PublicKey;
   let signer = provider.wallet.publicKey;
+  let asset_ata_auth: PublicKey;
+  let asset_ata: PublicKey;
 
   let game = {
     name: "Game",
@@ -108,7 +110,7 @@ describe("Asset Minting Tests", () => {
         collateralRatio: new BN(0),
       })
       .accountsStrict({
-        assetAccount: assetAccount,
+        assetAccount: asset_data_account,
         mint: asset_mint,
         gameAccount: game_acc,
         creator: signer,
@@ -117,6 +119,47 @@ describe("Asset Minting Tests", () => {
         systemProgram: SystemProgram.programId,
       })
       .rpc();
+  };
+
+  const mint_assets = async () => {
+    try {
+      await indie_games_program.methods
+        .mintAssetAsOwner({
+          amount: new BN(10),
+          assetName: asset.name,
+          gameName: game.name,
+          holder: signer,
+        })
+        .accountsStrict({
+          mint: asset_mint,
+          assetAccount: asset_data_account,
+          destinationAta: asset_ata,
+          collateralTokenAccount: dsc_token_vault,
+          userDscTokenAta: dsc_token_ata,
+          destinationAtaAuthority: asset_ata_auth,
+          gameAccount: game_acc,
+          user: signer,
+          systemProgram: SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          rent: SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+    } catch (error) {
+      if (error instanceof SendTransactionError) {
+        console.error("Transaction failed. Logs:");
+        console.error(error.logs);
+        // You can also access error.message for the error message
+
+        // Optional: Use expect to fail the test with a custom message
+        expect.fail(
+          `Transaction failed: ${error.message}\nLogs: ${error.logs.join("\n")}`
+        );
+      } else {
+        // If it's not a SendTransactionError, rethrow it
+        throw error;
+      }
+    }
   };
 
   before(async () => {
@@ -129,9 +172,9 @@ describe("Asset Minting Tests", () => {
       [Buffer.from(asset.name), game_acc.toBuffer()],
       indie_games_program.programId
     );
-    assetAccount = assetAccountPda;
+    asset_data_account = assetAccountPda;
     const [assetMintPda, mintBump] = PublicKey.findProgramAddressSync(
-      [game_acc.toBuffer(), assetAccountPda.toBuffer()],
+      [game_acc.toBuffer(), asset_data_account.toBuffer()],
       indie_games_program.programId
     );
     asset_mint = assetMintPda;
@@ -151,12 +194,21 @@ describe("Asset Minting Tests", () => {
         indie_games_program.programId
       );
     dsc_vault_authority = vault_authority;
-
+    const [assetAuth] = PublicKey.findProgramAddressSync(
+      [signer.toBuffer(), asset_mint.toBuffer()],
+      indie_games_program.programId
+    );
+    asset_ata_auth = assetAuth;
+    const tokenAccount = await getAssociatedTokenAddress(
+      asset_mint,
+      assetAuth,
+      true // allowOwnerOffCurve set to true
+    );
+    asset_ata = tokenAccount;
     let dscTokenAccount = await getAssociatedTokenAddress(
       dsc_mint,
       provider.wallet.publicKey
     );
-
     dsc_token_ata = dscTokenAccount;
 
     let tx = await stable_coin_program.methods
@@ -194,9 +246,14 @@ describe("Asset Minting Tests", () => {
   });
 
   it("initializes assets", async () => {
-    console.log(assetAccount);
     await init_assets();
-    let assetAcc = await indie_games_program.account.assetData.fetch(assetAccount);
+    let assetAcc = await indie_games_program.account.assetData.fetch(
+      asset_data_account
+    );
     expect(assetAcc.name).to.equal(asset.name);
+  });
+
+  it(" mint assets as a owner", async () => {
+    await mint_assets();
   });
 });

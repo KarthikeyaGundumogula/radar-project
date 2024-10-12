@@ -25,7 +25,7 @@ pub struct TransferAssetArgs {
     pub amount: u64,
     pub to_account_authority: Pubkey,
     pub asset_game_id: Pubkey,
-    pub sale_id: u64,
+    pub mint: Pubkey,
 }
 
 pub fn mint_authorized_asset_handler(
@@ -90,7 +90,10 @@ pub struct MintAuthorizedAssetContext<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn transfer_assets_handler(ctx: Context<TransferAssetContext>, args: TransferAssetArgs) -> Result<()> {
+pub fn transfer_assets_handler(
+    ctx: Context<TransferAssetContext>,
+    args: TransferAssetArgs,
+) -> Result<()> {
     let from_acc = &ctx.accounts.from_ata;
     let from_acc_authority = &ctx.accounts.from_ata_authority;
     let to_acc = &ctx.accounts.to_ata;
@@ -122,7 +125,7 @@ pub struct TransferAssetContext<'info> {
     #[account(mut)]
     pub from_ata: Account<'info, TokenAccount>,
     #[account(
-        seeds = [from_ata.key().as_ref()],
+        seeds = [args.mint.as_ref(),user.key().as_ref()],
         bump
     )]
     pub from_ata_authority: Account<'info, AssetAuthority>,
@@ -144,7 +147,10 @@ pub struct InitAssetATAArgs {
     pub asset_name: String,
 }
 
-pub fn init_asset_ata_handler(ctx: Context<InitAssetATAContext>, _args: InitAssetATAArgs) -> Result<()> {
+pub fn init_asset_ata_handler(
+    ctx: Context<InitAssetATAContext>,
+    _args: InitAssetATAArgs,
+) -> Result<()> {
     let ata_authority = &mut ctx.accounts.to_ata_authority;
     ata_authority.user = ctx.accounts.user.key();
     msg!("asset account initialized");
@@ -175,7 +181,7 @@ pub struct InitAssetATAContext<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        seeds = [to_ata.key().as_ref()],
+        seeds = [mint_account.key().as_ref(),user.key().as_ref()],
         bump,
         space = 8+AssetAuthority::INIT_SPACE
     )]

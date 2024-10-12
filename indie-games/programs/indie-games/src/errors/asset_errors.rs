@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 pub enum AssetErrors {
     #[msg("Arguments dodn't matched")]
     InvalidArguments,
+    #[msg("needed accounts are not passed")]
+    InvalidContext,
     #[msg("Minting new token failed")]
     MintFailed,
     #[msg("Only Game Owner can Create new Assets")]
@@ -11,5 +13,5 @@ pub enum AssetErrors {
     #[msg("Given Game Account and Asset Account are not related")]
     InvalidGameOrAssetAccount,
     #[msg("Cannot transfer non-tradable Assets")]
-    InvalidTransfer
+    InvalidTransfer,
 }

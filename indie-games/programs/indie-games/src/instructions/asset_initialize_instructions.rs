@@ -76,15 +76,14 @@ pub struct InitializeAssetDataContext<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
 }
+
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct MintAssetArgs {
-    pub game_id: Pubkey,
     pub amount: u64,
-    pub name: String,
+    pub asset_name: String,
     pub game_name: String,
     pub holder: Pubkey,
 }
-
 pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -> Result<()> {
     let signer = &ctx.accounts.user;
     let game_account = &ctx.accounts.game_account;
@@ -97,18 +96,26 @@ pub fn mint_asset_handler(ctx: Context<MintAssetContext>, args: MintAssetArgs) -
         game_account.key() == asset_account.game,
         AssetErrors::InvalidGameOrAssetAccount
     );
-    let asset_authority = &mut ctx.accounts.asset_authority;
+    msg!("asset_authority step");
+    msg!("token_program ...{}", ctx.accounts.token_program.key());
+    let asset_authority = &mut ctx.accounts.destination_ata_authority;
     asset_authority.user = args.holder;
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_accounts = MintTo {
         authority: ctx.accounts.mint.to_account_info(),
-        to: ctx.accounts.token_account.to_account_info(),
+        to: ctx.accounts.destination_ata.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let binding = ctx.accounts.asset_account.key();
-    let seeds: &[&[&[u8]]] = &[&[args.game_id.as_ref(), binding.as_ref(), &[ctx.bumps.mint]]];
+    msg!("before minting step");
+    
+    let asset_acc_key = asset_account.key();
+    let game_acc_key = game_account.key();
+    let seeds: &[&[&[u8]]] = &[&[
+        game_acc_key.as_ref(),
+        asset_acc_key.as_ref(),
+        &[ctx.bumps.mint],
+    ]];
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, seeds);
-
     mint_to(cpi_ctx, args.amount)?;
     msg!("minted tokens {args.amount}");
     if asset_account.collateral_option == true {
@@ -134,11 +141,12 @@ pub struct MintAssetContext<'info> {
     #[account(
         mut,
         seeds=[game_account.key().as_ref(),asset_account.key().as_ref()],
-        bump
+        bump,
+        mint::authority = mint
     )]
     pub mint: Account<'info, Mint>,
     #[account(
-        seeds=[args.name.as_bytes(),args.game_id.key().as_ref()],
+        seeds=[args.asset_name.as_bytes(),game_account.key().as_ref()],
         bump,
     )]
     pub asset_account: Account<'info, AssetData>,
@@ -146,9 +154,9 @@ pub struct MintAssetContext<'info> {
         init_if_needed,
         payer = user,
         associated_token::mint = mint,
-        associated_token::authority = asset_authority,
+        associated_token::authority = destination_ata_authority,
     )]
-    pub token_account: Account<'info, TokenAccount>,
+    pub destination_ata: Account<'info, TokenAccount>,
     #[account(mut)]
     pub collateral_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
@@ -156,11 +164,11 @@ pub struct MintAssetContext<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        seeds = [token_account.key().as_ref()],
+        seeds = [args.holder.as_ref(),mint.key().as_ref()],
         bump,
         space = 8+AssetAuthority::INIT_SPACE
     )]
-    pub asset_authority: Account<'info, AssetAuthority>,
+    pub destination_ata_authority: Account<'info, AssetAuthority>,
     #[account(
         seeds = [user.key().as_ref(),args.game_name.as_bytes()],
         bump

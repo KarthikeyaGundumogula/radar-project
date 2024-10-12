@@ -31,9 +31,9 @@ pub struct ListAssetArgs {
     pub asset_name: String,
     pub sale_price: u64,
     pub sale_amount: u64,
-    pub market_authority: Pubkey,
     pub asset_game_id: Pubkey,
     pub dsc_credit_ata: Pubkey,
+    pub asset_mint: Pubkey,
 }
 
 pub fn list_for_sale_handler(ctx: Context<ListForSaleContext>, args: ListAssetArgs) -> Result<()> {
@@ -81,7 +81,7 @@ pub struct ListForSaleContext<'info> {
     #[account(mut)]
     pub seller_dsc_ata: Account<'info, TokenAccount>,
     #[account(
-        seeds = [seller_asset_ata.key().as_ref()],
+        seeds = [seller.key().as_ref(),args.asset_mint.as_ref()],
         bump
     )]
     pub seller_asset_ata_authority: Account<'info, AssetAuthority>,
